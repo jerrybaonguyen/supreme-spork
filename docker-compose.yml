@@ -1,0 +1,43 @@
+version: "3.9"
+
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+
+  api:
+    build: ./api
+    container_name: rag-api
+    restart: unless-stopped
+    depends_on:
+      - qdrant
+      - ollama
+    environment:
+      QDRANT_URL: http://qdrant:6333
+      OLLAMA_URL: http://ollama:11434
+      DEFAULT_COLLECTION: interworks_docs
+      EMBEDDING_MODEL: bge-m3
+      GENERATION_MODEL: llama3.1:8b
+    ports:
+      - "8000:8000"
+
+volumes:
+  qdrant_storage:
+  ollama_data:
